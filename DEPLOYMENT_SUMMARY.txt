@@ -1,0 +1,197 @@
+================================================================================
+GARFENTER CONTABLE - ONE-CLICK DEPLOYMENT
+Deployment Files Summary
+================================================================================
+
+CREATED FILES:
+--------------
+
+1. docker-compose.garfenter.yml
+   - Complete Docker Compose configuration
+   - Services: API, Frontend, PostgreSQL, MongoDB, Redis, Gotenberg
+   - Configured for Guatemala (es locale, GTQ currency)
+   - Health checks and dependencies configured
+   - Persistent volumes for data
+
+2. garfenter-start.sh (executable)
+   - One-click startup script with branding
+   - Commands: start, stop, restart, status, logs, cleanup, help
+   - Automatic environment file creation
+   - Colored terminal output with ASCII art
+   - Service health monitoring
+
+3. .env.garfenter.example
+   - Complete environment configuration template
+   - Guatemala-specific defaults (es, GTQ, America/Guatemala)
+   - Comprehensive comments and documentation
+   - Security settings
+   - Optional integrations (S3, Plaid, Stripe, etc.)
+
+4. packages/server/Dockerfile
+   - Multi-stage build for backend API
+   - Node.js 18 Alpine base
+   - Production-optimized
+   - PNPM package manager
+
+5. docker/postgres/init.sql
+   - PostgreSQL initialization script
+   - Guatemala locale configuration
+   - Performance tuning
+   - Extensions setup (uuid-ossp, pg_trgm)
+
+6. GARFENTER_README.md
+   - Complete documentation in Spanish
+   - Installation instructions
+   - Configuration guide
+   - Security recommendations
+   - Backup procedures
+   - Troubleshooting guide
+
+7. QUICKSTART_GARFENTER.md
+   - Quick start guide in Spanish
+   - 3-step installation
+   - Common commands
+   - Quick troubleshooting
+
+8. POSTGRES_MIGRATION_NOTES.md
+   - Important compatibility notes
+   - PostgreSQL vs MariaDB considerations
+   - Migration recommendations
+   - Testing checklist
+
+9. .dockerignore
+   - Optimized for faster Docker builds
+   - Excludes unnecessary files
+
+================================================================================
+QUICK START:
+-----------
+
+cd /Users/garfenter/development/products/accounting/bigcapital
+./garfenter-start.sh start
+
+Access the application at: http://localhost:4000
+
+================================================================================
+CONFIGURATION:
+-------------
+
+Default Ports:
+- Frontend:   4000
+- Backend:    3000
+- PostgreSQL: 5432
+
+Default Settings:
+- Locale:     es (Español)
+- Currency:   GTQ (Quetzal)
+- Timezone:   America/Guatemala
+
+Container Names:
+- garfenter-contable-api
+- garfenter-contable-webapp
+- garfenter-contable-postgres
+- garfenter-contable-mongo
+- garfenter-contable-redis
+- garfenter-contable-gotenberg
+- garfenter-contable-migration
+
+================================================================================
+IMPORTANT NOTES:
+---------------
+
+1. POSTGRESQL COMPATIBILITY:
+   - Bigcapital originally uses MariaDB/MySQL
+   - PostgreSQL support may require code modifications
+   - See POSTGRES_MIGRATION_NOTES.md for details
+   - Recommend thorough testing before production use
+
+2. SECURITY:
+   - Change all default passwords in .env.garfenter
+   - Especially: JWT_SECRET, DB_PASSWORD, AGENDASH_AUTH_PASSWORD
+   - Use HTTPS in production (configure reverse proxy)
+
+3. FIRST RUN:
+   - System will auto-create .env.garfenter from example
+   - Database migration runs automatically on first start
+   - Wait 1-2 minutes for all services to be ready
+
+4. PRODUCTION DEPLOYMENT:
+   - Review all security settings
+   - Configure email (MAIL_* variables)
+   - Set up automated backups
+   - Use reverse proxy with SSL/TLS
+   - Consider using MariaDB instead of PostgreSQL for compatibility
+
+================================================================================
+ARCHITECTURE:
+------------
+
+┌─────────────────────────────────────────────────────────────┐
+│                     Garfenter Contable                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌──────────┐         ┌──────────────┐                     │
+│  │ Frontend │────────▶│   Backend    │                     │
+│  │  (React) │         │ (Node/Nest)  │                     │
+│  │  :4000   │         │    :3000     │                     │
+│  └──────────┘         └───────┬──────┘                     │
+│                               │                             │
+│       ┌───────────────────────┼──────────────┐             │
+│       │                       │              │             │
+│       ▼                       ▼              ▼             │
+│  ┌──────────┐         ┌──────────┐    ┌─────────┐         │
+│  │PostgreSQL│         │ MongoDB  │    │  Redis  │         │
+│  │   :5432  │         │  :27017  │    │  :6379  │         │
+│  └──────────┘         └──────────┘    └─────────┘         │
+│       │                                                     │
+│       │               ┌──────────────┐                     │
+│       └──────────────▶│  Gotenberg   │                     │
+│                       │     :3000    │                     │
+│                       └──────────────┘                     │
+│                       (PDF Generator)                       │
+└─────────────────────────────────────────────────────────────┘
+
+================================================================================
+USEFUL COMMANDS:
+---------------
+
+# Start system
+./garfenter-start.sh start
+
+# View logs
+./garfenter-start.sh logs
+
+# Check status
+./garfenter-start.sh status
+
+# Stop system
+./garfenter-start.sh stop
+
+# Backup database
+docker exec garfenter-contable-postgres pg_dumpall -U garfenter > backup.sql
+
+# Access PostgreSQL
+docker exec -it garfenter-contable-postgres psql -U garfenter -d garfenter_system
+
+# View resource usage
+docker stats --no-stream | grep garfenter
+
+================================================================================
+SUPPORT:
+--------
+
+Documentation: See GARFENTER_README.md
+Quick Start:   See QUICKSTART_GARFENTER.md
+Compatibility: See POSTGRES_MIGRATION_NOTES.md
+
+Bigcapital Project: https://github.com/bigcapitalhq/bigcapital
+Bigcapital Docs:    https://docs.bigcapital.app/
+
+================================================================================
+LICENSE:
+--------
+
+Based on Bigcapital open source project.
+Maintains original project license.
+
+================================================================================
