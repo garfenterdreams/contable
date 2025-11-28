@@ -64,7 +64,8 @@ else
 fi
 
 echo "Starting Bigcapital server..."
-exec node /app/dist/index.js
+cd /app/packages/server
+exec node build/index.js
 EOF
 
 RUN chmod +x /docker-entrypoint.sh
