@@ -104,8 +104,8 @@ set -e
 echo "=== Garfenter Contable Server Startup ==="
 echo "Waiting for MySQL..."
 
-# Wait for MySQL to be ready
-until mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1" > /dev/null 2>&1; do
+# Wait for MySQL to be ready (--skip-ssl for internal network)
+until mysql --skip-ssl -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1" > /dev/null 2>&1; do
     echo "MySQL is unavailable - sleeping 2s..."
     sleep 2
 done
@@ -126,7 +126,7 @@ echo "MongoDB check complete!"
 
 # Check if migrations are needed
 echo "Checking database migrations..."
-TABLES_EXIST=$(mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -N -s -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$SYSTEM_DB_NAME'" 2>/dev/null || echo "0")
+TABLES_EXIST=$(mysql --skip-ssl -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -N -s -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$SYSTEM_DB_NAME'" 2>/dev/null || echo "0")
 
 if [ "$TABLES_EXIST" = "0" ] || [ -z "$TABLES_EXIST" ]; then
     echo "No tables found - running initial migrations..."
