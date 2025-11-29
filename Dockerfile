@@ -124,6 +124,10 @@ until timeout 1 bash -c "echo >/dev/tcp/${MONGODB_HOST:-garfenter-mongo}/27017" 
 done
 echo "MongoDB check complete!"
 
+# Create database if it doesn't exist
+echo "Ensuring database exists..."
+mysql --skip-ssl -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $SYSTEM_DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null || true
+
 # Check if migrations are needed
 echo "Checking database migrations..."
 TABLES_EXIST=$(mysql --skip-ssl -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -N -s -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '$SYSTEM_DB_NAME'" 2>/dev/null || echo "0")
@@ -131,10 +135,34 @@ TABLES_EXIST=$(mysql --skip-ssl -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -N 
 if [ "$TABLES_EXIST" = "0" ] || [ -z "$TABLES_EXIST" ]; then
     echo "No tables found - running initial migrations..."
     cd /app/packages/server
+
+    # Create a dynamic knexfile that uses environment variables
+    cat > /tmp/knexfile-runtime.js << KNEXEOF
+const { knexSnakeCaseMappers } = require('objection');
+
+module.exports = {
+  client: 'mysql',
+  connection: {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '3306'),
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    database: process.env.SYSTEM_DB_NAME || 'bigcapital',
+    charset: process.env.DB_CHARSET || 'utf8mb4',
+  },
+  migrations: {
+    directory: './src/database/migrations',
+  },
+  pool: { min: 0, max: 7 },
+  ...knexSnakeCaseMappers({ upperCase: true }),
+};
+KNEXEOF
+
+    echo "Running migrations with host=$DB_HOST database=$SYSTEM_DB_NAME..."
     if [ -f "node_modules/.bin/knex" ]; then
-        node_modules/.bin/knex migrate:latest --knexfile knexfile.js || echo "Migration completed or already up to date"
+        node_modules/.bin/knex migrate:latest --knexfile /tmp/knexfile-runtime.js || echo "Migration completed or already up to date"
     elif command -v npx &> /dev/null; then
-        npx knex migrate:latest --knexfile knexfile.js || echo "Migration completed or already up to date"
+        npx knex migrate:latest --knexfile /tmp/knexfile-runtime.js || echo "Migration completed or already up to date"
     fi
     echo "Migrations complete!"
 else
