@@ -136,9 +136,10 @@ if [ "$TABLES_EXIST" = "0" ] || [ -z "$TABLES_EXIST" ]; then
     echo "No tables found - running initial migrations..."
     cd /app/packages/server
 
-    # Create a dynamic knexfile that uses environment variables
-    cat > /tmp/knexfile-runtime.js << KNEXEOF
+    # Create a dynamic knexfile that uses environment variables with absolute paths
+    cat > /app/packages/server/knexfile-runtime.js << KNEXEOF
 const { knexSnakeCaseMappers } = require('objection');
+const path = require('path');
 
 module.exports = {
   client: 'mysql',
@@ -151,7 +152,7 @@ module.exports = {
     charset: process.env.DB_CHARSET || 'utf8mb4',
   },
   migrations: {
-    directory: './src/database/migrations',
+    directory: path.resolve(__dirname, 'src/database/migrations'),
   },
   pool: { min: 0, max: 7 },
   ...knexSnakeCaseMappers({ upperCase: true }),
@@ -160,9 +161,9 @@ KNEXEOF
 
     echo "Running migrations with host=$DB_HOST database=$SYSTEM_DB_NAME..."
     if [ -f "node_modules/.bin/knex" ]; then
-        node_modules/.bin/knex migrate:latest --knexfile /tmp/knexfile-runtime.js || echo "Migration completed or already up to date"
+        node_modules/.bin/knex migrate:latest --knexfile /app/packages/server/knexfile-runtime.js || echo "Migration completed or already up to date"
     elif command -v npx &> /dev/null; then
-        npx knex migrate:latest --knexfile /tmp/knexfile-runtime.js || echo "Migration completed or already up to date"
+        npx knex migrate:latest --knexfile /app/packages/server/knexfile-runtime.js || echo "Migration completed or already up to date"
     fi
     echo "Migrations complete!"
 else
